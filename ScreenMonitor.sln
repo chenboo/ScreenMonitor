@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MonitorSrv", "MonitorSrv\MonitorSrv.vcproj", "{C699A843-B0EF-4C26-AE65-34F8C0953D37}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Monitor", "Monitor\Monitor.vcproj", "{D09E5A1A-7E1E-4976-BB9B-EBAA135E7329}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C699A843-B0EF-4C26-AE65-34F8C0953D37}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C699A843-B0EF-4C26-AE65-34F8C0953D37}.Debug|Win32.Build.0 = Debug|Win32
+		{C699A843-B0EF-4C26-AE65-34F8C0953D37}.Release|Win32.ActiveCfg = Release|Win32
+		{C699A843-B0EF-4C26-AE65-34F8C0953D37}.Release|Win32.Build.0 = Release|Win32
+		{D09E5A1A-7E1E-4976-BB9B-EBAA135E7329}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D09E5A1A-7E1E-4976-BB9B-EBAA135E7329}.Debug|Win32.Build.0 = Debug|Win32
+		{D09E5A1A-7E1E-4976-BB9B-EBAA135E7329}.Release|Win32.ActiveCfg = Release|Win32
+		{D09E5A1A-7E1E-4976-BB9B-EBAA135E7329}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
