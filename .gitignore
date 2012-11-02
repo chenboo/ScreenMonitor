@@ -1,9 +1,7 @@
 *.ncb
 *.exe
 *.pdb
-*.dll
 *.exp
-*.lib
 *.htm
 *.obj
 *.dep
