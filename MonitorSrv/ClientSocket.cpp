@@ -11,8 +11,8 @@
 #pragma comment(lib, "ws2_32.lib")
 
 int CClientSocket::m_nProxyType = PROXY_NONE;
-char CClientSocket::m_strProxyHost[256] = {0};
 UINT CClientSocket::m_nProxyPort = 1080;
+char CClientSocket::m_strProxyHost[256] = {0};
 char CClientSocket::m_strUserName[256] = {0};
 char CClientSocket::m_strPassWord[256] = {0};
 

