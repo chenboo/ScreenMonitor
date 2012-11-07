@@ -17,7 +17,6 @@ public:
 	LPVOID getNextScreen(LPDWORD lpdwBytes);
 
 	LPBITMAPINFO getBI();
-	BITMAP 
 	UINT	getBISize();
 	UINT	getFirstImageSize();
 	void	setCaptureLayer(bool bIsCaptureLayer);

