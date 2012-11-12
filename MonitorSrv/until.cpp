@@ -14,10 +14,11 @@ unsigned int __stdcall ThreadLoader(LPVOID param)
 #ifdef _DLL
  	try
  	{
-#endif	
+#endif
 		THREAD_ARGLIST	arg;
 		memcpy(&arg, param, sizeof(arg));
 		SetEvent(arg.hEventTransferArg);
+
 		// Óë×¿Ãæ½»»¥
 		if (arg.bInteractive)
 			SelectDesktop(NULL);

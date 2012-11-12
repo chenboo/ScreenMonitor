@@ -90,12 +90,15 @@ HCURSOR CMonitorSrvDlg::OnQueryDragIcon()
 
 BOOL CMonitorSrvDlg::StartSrv()
 {
-	char* lpszHost = "127.0.0.1";
+	char* lpszHost = "192.168.0.93";
 	DWORD dwPort = 8077;
 
 	CClientSocket socketClient;
 	if (!socketClient.Connect(lpszHost, dwPort))
+	{
 		AfxMessageBox(_T("Connect Fail!"));
+		return FALSE;
+	}
 	
 	DWORD dwExitCode = SOCKET_ERROR;
 	

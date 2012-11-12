@@ -31,8 +31,10 @@ protected:
 
 public:
 	void Activate(UINT nPort, UINT nMaxConnections);
+
 	static void CALLBACK NotifyProc(LPVOID lpParam, ClientContext* pContext, UINT nCode);
 	static void ProcessReceive(ClientContext *pContext);
 	static void ProcessReceiveComplete(ClientContext *pContext);
+	
 	afx_msg void OnBnClickedBtnmonitor();
 };

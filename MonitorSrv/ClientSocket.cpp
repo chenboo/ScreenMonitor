@@ -26,6 +26,8 @@ CClientSocket::CClientSocket()
 	m_hEvent = CreateEvent(NULL, true, false, NULL);
 	m_Socket = INVALID_SOCKET;
 
+	m_hRecvWorkerThread = NULL;
+
 	BYTE byPacketFlag[] = {'G', 'h', '0', 's', 't'};
 	memcpy(m_byPacketFlag, byPacketFlag, sizeof(byPacketFlag));
 }
@@ -105,7 +107,7 @@ bool CClientSocket::Connect(LPCTSTR lpszHost, UINT nPort)
 		return false;
 	}
 
-	const char chOpt = 1;
+	char chOpt = 1;
 	if (setsockopt(m_Socket, SOL_SOCKET, SO_KEEPALIVE, (char *)&chOpt, sizeof(chOpt)) == 0)
 	{
 		tcp_keepalive klive;

@@ -77,7 +77,6 @@ public:
 	CClientSocket();
 	virtual ~CClientSocket();
 
-public:
 	bool Connect(LPCTSTR lpszHost, UINT nPort);
 	void Disconnect();
 

