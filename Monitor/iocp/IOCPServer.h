@@ -35,8 +35,8 @@ public:
 	}
 
 protected:
-	CRITICAL_SECTION*	m_pcs;
-	CString				m_strFunc;
+	CString m_strFunc;
+	CRITICAL_SECTION* m_pcs;
 };
 
 enum IOType 
@@ -72,7 +72,7 @@ struct ClientContext
 	int	m_Dialog[2]; // 放对话框列表用，第一个int是类型，第二个是CDialog的地址
 	int	m_nTransferProgress;
 
-	WSABUF	m_wsaInBuffer;
+	WSABUF m_wsaInBuffer;
 	WSABUF m_wsaOutBuffer;
 
 	BYTE m_byInBuffer[1024 * 8];
@@ -163,7 +163,7 @@ private:
 	ContextList	m_listFreePool;
 
 	WSAEVENT m_hEvent;
-	SOCKET m_socketListen;    
+	SOCKET m_socketListen;
 	HANDLE m_hKillEvent;
 	HANDLE m_hThread;
 	HANDLE m_hCompletionPort;

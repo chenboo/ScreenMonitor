@@ -31,5 +31,4 @@ protected:
 
 private:
 	CRITICAL_SECTION m_cs;
-
 };
