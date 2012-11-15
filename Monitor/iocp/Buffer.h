@@ -1,39 +1,23 @@
-// Buffer.h: interface for the CBuffer class.
-//
-//////////////////////////////////////////////////////////////////////
-
-#if !defined(AFX_BUFFER_H__829F6693_AC4D_11D2_8C37_00600877E420__INCLUDED_)
-#define AFX_BUFFER_H__829F6693_AC4D_11D2_8C37_00600877E420__INCLUDED_
-
-#if _MSC_VER > 1000
 #pragma once
-#endif // _MSC_VER > 1000
+#include <windows.h>
 
-class CBuffer  
+class CBuffer
 {
 public:
 	CBuffer();
 	virtual ~CBuffer();
 
-public:
-	UINT Delete(UINT nSize);
 	UINT Read(PBYTE pData, UINT nSize);
-	
 	BOOL Write(PBYTE pData, UINT nSize);
-	BOOL Write(CString& strData);
-	
-	UINT GetBufferLen();
-	int Scan(PBYTE pScan,UINT nPos);
-	
-	BOOL Insert(PBYTE pData, UINT nSize);
-	BOOL Insert(CString& strData);
-	
-	void Copy(CBuffer& buffer);	
+	UINT Delete(UINT nSize);
 
-	PBYTE GetBuffer(UINT nPos=0);
+	UINT GetBufferLen();
+	PBYTE GetBuffer(UINT nPos = 0);
 	void ClearBuffer();
 
-	void FileWrite(const CString& strFileName);
+	BOOL Insert(PBYTE pData, UINT nSize);
+	void Copy(CBuffer& buffer);	
+	int Scan(PBYTE pScan,UINT nPos);
 
 protected:
 	UINT ReAllocateBuffer(UINT nRequestedSize);
@@ -44,6 +28,8 @@ protected:
 	PBYTE	m_pBase;
 	PBYTE	m_pPtr;
 	UINT	m_nSize;
-};
 
-#endif // !defined(AFX_BUFFER_H__829F6693_AC4D_11D2_8C37_00600877E420__INCLUDED_)
+private:
+	CRITICAL_SECTION m_cs;
+
+};

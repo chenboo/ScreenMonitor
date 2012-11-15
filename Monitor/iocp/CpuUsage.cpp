@@ -5,11 +5,6 @@
 #include "stdafx.h"
 #include "CpuUsage.h"
 
-#ifdef _DEBUG
-#undef THIS_FILE
-static char THIS_FILE[]=__FILE__;
-#define new DEBUG_NEW
-#endif
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -53,13 +48,7 @@ int CCpuUsage::GetUsage()
 
 	PdhCollectQueryData(m_hQuery);
 
-    if (ERROR_SUCCESS != PdhGetFormattedCounterValue( 
-                                    m_pCounterStruct->hCounter,
-                                    PDH_FMT_LONG,
-                                    NULL,
-                                    &pdhFormattedValue )) 
-
-
+    if (ERROR_SUCCESS != PdhGetFormattedCounterValue(m_pCounterStruct->hCounter, PDH_FMT_LONG, NULL, &pdhFormattedValue)) 
 	{
 		return 0;
 	}

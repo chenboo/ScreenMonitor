@@ -7,15 +7,6 @@ public:
 	CBuffer();
 	virtual ~CBuffer();
 
-protected:
-	PBYTE	m_pBase;
-	PBYTE	m_pPtr;
-	UINT	m_nSize;
-
-private:
-	CRITICAL_SECTION m_cs;
-
-public:
 	UINT Read(PBYTE pData, UINT nSize);
 	BOOL Write(PBYTE pData, UINT nSize);
 	UINT Delete(UINT nSize);
@@ -32,4 +23,13 @@ protected:
 	UINT ReAllocateBuffer(UINT nRequestedSize);
 	UINT DeAllocateBuffer(UINT nRequestedSize);
 	UINT GetMemSize();
+
+protected:
+	PBYTE	m_pBase;
+	PBYTE	m_pPtr;
+	UINT	m_nSize;
+
+private:
+	CRITICAL_SECTION m_cs;
+
 };
