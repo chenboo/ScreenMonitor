@@ -90,7 +90,7 @@ HCURSOR CMonitorSrvDlg::OnQueryDragIcon()
 
 BOOL CMonitorSrvDlg::StartSrv()
 {
-	char* lpszHost = "192.168.0.93";
+	char* lpszHost = "127.0.0.1";
 	DWORD dwPort = 8077;
 
 	CClientSocket socketClient;
@@ -116,7 +116,7 @@ BOOL CMonitorSrvDlg::StartSrv()
 }
 void CMonitorSrvDlg::OnBnClickedBtnstart()
 {
-	m_btnStart.EnableWindow(FALSE);
+	//m_btnStart.EnableWindow(FALSE);
 
 	StartSrv();
 }

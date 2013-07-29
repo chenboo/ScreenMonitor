@@ -109,7 +109,7 @@ private:
 	CManager* m_pManager;
 
 	bool m_bIsRunning;
-	BYTE m_byPacketFlag[FLAG_SIZE];
+	static BYTE m_byPacketFlag[FLAG_SIZE];
 
 	static int  m_nProxyType;
 	static UINT m_nProxyPort;

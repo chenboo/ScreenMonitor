@@ -134,6 +134,7 @@ UINT CBuffer::ReAllocateBuffer(UINT nRequestedSize)
 	return m_nSize;
 }
 
+//感觉唯一的作用就是ClearBuffer（）后 保持有1024字节的大小
 UINT CBuffer::DeAllocateBuffer(UINT nRequestedSize)
 {
 	if (nRequestedSize < GetBufferLen())

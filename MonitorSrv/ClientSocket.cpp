@@ -16,6 +16,8 @@ char CClientSocket::m_strProxyHost[256] = {0};
 char CClientSocket::m_strUserName[256] = {0};
 char CClientSocket::m_strPassWord[256] = {0};
 
+BYTE CClientSocket::m_byPacketFlag[FLAG_SIZE] = {'G','h','0','s','t'};
+
 CClientSocket::CClientSocket()
 {
 	WSADATA wsaData;
@@ -28,8 +30,8 @@ CClientSocket::CClientSocket()
 
 	m_hRecvWorkerThread = NULL;
 
-	BYTE byPacketFlag[] = {'G', 'h', '0', 's', 't'};
-	memcpy(m_byPacketFlag, byPacketFlag, sizeof(byPacketFlag));
+	/*BYTE byPacketFlag[] = {'G', 'h', '0', 's', 't'};
+	memcpy(m_byPacketFlag, byPacketFlag, sizeof(byPacketFlag));*/
 }
 
 CClientSocket::~CClientSocket()

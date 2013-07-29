@@ -20,6 +20,7 @@ CBuffer::~CBuffer()
 	DeleteCriticalSection(&m_cs);
 }
 
+//从尾插入
 BOOL CBuffer::Write(PBYTE pData, UINT nSize)
 {
 	EnterCriticalSection(&m_cs);
@@ -38,6 +39,7 @@ BOOL CBuffer::Write(PBYTE pData, UINT nSize)
 	return nSize;
 }
 
+//从头开始插入
 BOOL CBuffer::Insert(PBYTE pData, UINT nSize)
 {
 	EnterCriticalSection(&m_cs);
@@ -57,6 +59,7 @@ BOOL CBuffer::Insert(PBYTE pData, UINT nSize)
 	return nSize;
 }
 
+//从缓冲区开始拿出数据，剩下的数据前移
 UINT CBuffer::Read(PBYTE pData, UINT nSize)
 {
 	EnterCriticalSection(&m_cs);
@@ -75,7 +78,7 @@ UINT CBuffer::Read(PBYTE pData, UINT nSize)
 	if (nSize)
 	{
 		CopyMemory(pData, m_pBase, nSize);
-		MoveMemory(m_pBase,m_pBase + nSize, GetMemSize() - nSize);
+		MoveMemory(m_pBase, m_pBase + nSize, GetMemSize() - nSize);
 
 		m_pPtr -= nSize;
 	}
@@ -160,11 +163,14 @@ int CBuffer::Scan(PBYTE pScan, UINT nPos)
 		return -1;
 	}
 
-	PBYTE pStr = (PBYTE)strstr((char*)(m_pBase + nPos),(char*)pScan);
-	
+	PBYTE pMatch = NULL;
+	pMatch = (PBYTE)strstr((char*)(m_pBase + nPos),(char*)pScan);
+	if (NULL == pMatch)
+		return -1;
+
 	int nOffset = 0;
-	if (pStr)
-		nOffset = (pStr - m_pBase) + strlen((char*)pScan);
+	if (pMatch)
+		nOffset = (pMatch - m_pBase) + strlen((char*)pScan);
 
 	return nOffset;
 }

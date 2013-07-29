@@ -31,7 +31,6 @@ public:
 	{
 		LeaveCriticalSection(m_pcs);
 		TRACE(_T("LC %d %s\n") , GetCurrentThreadId() , m_strFunc);
-
 	}
 
 protected:
@@ -47,13 +46,13 @@ enum IOType
 	IOIdle
 };
 
-class OVERLAPPEDPLUS 
+class OVERLAPPEDPLUS
 {
 public:
 	OVERLAPPED m_ol;
 	IOType	m_ioType;
 
-	OVERLAPPEDPLUS(IOType ioType) 
+	OVERLAPPEDPLUS(IOType ioType)
 	{
 		ZeroMemory(this, sizeof(OVERLAPPEDPLUS));
 		m_ioType = ioType;

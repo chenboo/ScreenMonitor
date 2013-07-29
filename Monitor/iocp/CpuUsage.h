@@ -22,10 +22,10 @@ class CCpuUsage
 public:
 	CCpuUsage();
 	virtual ~CCpuUsage();
-	BOOL	Init();
+	BOOL Init();
 	int GetUsage();
 
 protected:
-	PPDHCOUNTERSTRUCT			m_pCounterStruct;
-	HQUERY						m_hQuery;
+	PPDHCOUNTERSTRUCT m_pCounterStruct;
+	HQUERY			  m_hQuery;
 };

@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "IOCPServer.h"
-
 #include "../zlib/zlib.h"
 
 // 'G' 'h' '0' 's' 't' | PacketLen | UnZipLen
@@ -58,8 +57,7 @@ bool CIOCPServer::Initialize(NOTIFYPROC pNotifyProc, CDialog* pFrame, int nMaxCo
 	m_nMaxConnections = nMaxConnections;
 
 	m_socketListen = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
-
-	if (m_socketListen == INVALID_SOCKET)
+	if (INVALID_SOCKET == m_socketListen)
 	{
 		TRACE(_T("Could not create listen socket %ld\n"),WSAGetLastError());
 		return false;
@@ -68,7 +66,7 @@ bool CIOCPServer::Initialize(NOTIFYPROC pNotifyProc, CDialog* pFrame, int nMaxCo
 	// Event for handling Network IO
 	m_hEvent = WSACreateEvent();
 
-	if (m_hEvent == WSA_INVALID_EVENT)
+	if (WSA_INVALID_EVENT == m_hEvent)
 	{
 		TRACE(_T("WSACreateEvent() error %ld\n"),WSAGetLastError());
 		closesocket(m_socketListen);
@@ -82,18 +80,16 @@ bool CIOCPServer::Initialize(NOTIFYPROC pNotifyProc, CDialog* pFrame, int nMaxCo
 						  m_hEvent,
 						  FD_ACCEPT);
 
-	if (nRet == SOCKET_ERROR)
+	if (SOCKET_ERROR == nRet)
 	{
 		TRACE(_T("WSAAsyncSelect() error %ld\n"),WSAGetLastError());
 		closesocket(m_socketListen);
 		return false;
 	}
 
-	SOCKADDR_IN		saServer;		
-
+	SOCKADDR_IN	saServer;		
 	// Listen on our designated Port#
 	saServer.sin_port = htons(nPort);
-
 	// Fill in the rest of the address structure
 	saServer.sin_family = AF_INET;
 	saServer.sin_addr.s_addr = INADDR_ANY;
@@ -102,8 +98,7 @@ bool CIOCPServer::Initialize(NOTIFYPROC pNotifyProc, CDialog* pFrame, int nMaxCo
 	nRet = bind(m_socketListen, 
 				(LPSOCKADDR)&saServer, 
 				sizeof(struct sockaddr));
-
-	if (nRet == SOCKET_ERROR)
+	if (SOCKET_ERROR == nRet)
 	{
 		TRACE(_T("bind() error %ld\n"),WSAGetLastError());
 		closesocket(m_socketListen);
@@ -119,13 +114,8 @@ bool CIOCPServer::Initialize(NOTIFYPROC pNotifyProc, CDialog* pFrame, int nMaxCo
 		return false;
 	}
 
-
-	////////////////////////////////////////////////////////////////////////////////////////
-	////////////////////////////////////////////////////////////////////////////////////////
 	UINT	dwThreadId = 0;
-
-	m_hThread =
-			(HANDLE)_beginthreadex(NULL,				// Security
+	m_hThread = (HANDLE)_beginthreadex(NULL,				// Security
 									 0,					// Stack size - use default
 									 ListenThreadProc,  // Thread fn entry point
 									 (void*) this,	    

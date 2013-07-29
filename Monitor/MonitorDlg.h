@@ -27,6 +27,7 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	afx_msg	LRESULT OnOpenScreenSpyDialog(WPARAM, LPARAM);
+	afx_msg void OnBnClickedBtnmonitor();
 	DECLARE_MESSAGE_MAP()
 
 public:
@@ -35,6 +36,4 @@ public:
 	static void CALLBACK NotifyProc(LPVOID lpParam, ClientContext* pContext, UINT nCode);
 	static void ProcessReceive(ClientContext *pContext);
 	static void ProcessReceiveComplete(ClientContext *pContext);
-	
-	afx_msg void OnBnClickedBtnmonitor();
 };
